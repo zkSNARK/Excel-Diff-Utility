@@ -1,9 +1,27 @@
 """A utility to diff 2 Excel files and report the cells which have changed.
 
-Expects an Excel file to be under version control in a local repo.
+This utility is for people who for some reason need to make save points
+to an excel file and report the differences between save points into the
+console.
 
-Does not handle credential input or other git configuration elements. If
-the git commands
+Why this functionality isn't built into Excel, I don't know.  But I do know
+that it was easy to make... so what's up Microsoft?
+
+Expects an Excel file to be under version control in a local repo. If you
+do not have an excel file under version control (what normal human would?),
+you can create a repo (on a linux or mac computer) with ...
+    --make_git
+
+Pass the file you want to diff with ...
+    --file <filename>
+
+
+Does not handle credential input or other git configuration elements.
+
+Author : Chris Goebel
+
+License : Anyone can do anything with this file.  Submit PR's and I'll add
+them if they are reasonable.
 """
 
 import argparse
@@ -26,7 +44,7 @@ def is_git_directory(path='.'):
 def handle_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-g", "--make_git", help="create local git repo if none exists", action="store_true")
-    parser.add_argument("-f", "--file", help="The file we are tracking.", action="store_true")
+    parser.add_argument("-f", "--file", help="The Excel file to track.", action="store_true")
     args = parser.parse_args()
     return args.make_git, args.file
 
@@ -34,11 +52,6 @@ def handle_args():
 def tmp_name(excel_file):
     f = excel_file.split('.')
     return f[0] + "_tmp." + f[1]
-
-
-def rename_file(excel_file):
-    process = subprocess.Popen(["git", "pull"], stdout=subprocess.PIPE)
-    output = process.communicate()[0]
 
 
 def copy_file_to_tmp(excel_file):
@@ -143,27 +156,24 @@ def select_commit_for_diff(repo: git.Repo):
 
 
 def main():
-    repo = None
-
-    make_git, file = handle_args()
+    make_git, excel_file = handle_args()
     if make_git:
         if is_git_directory():
             repo = git.Repo(".")
             print("Git repo creation requested through flags, but repo already exists in current directory.")
         else:
-            create_repo_here()
-            if file:
-                repo = git.Repo(".")
-                repo.index.add([file])
+            repo = create_repo_here()
+            if excel_file:
+                repo.index.add([excel_file])
                 repo.index.commit("initial commit")
-                print("Git repo created in current directory and added file: " + file + ".")
+                print("Git repo created in current directory and added file: " + excel_file + ".")
             else:
                 print("Created git repo in current directory.")
     else:
         repo = git.Repo(".")
 
-    if file:
-        print("requested to run on file : " + file)
+    if excel_file:
+        print("requested to run on file : " + excel_file)
     else:
         print("Using default file : test.xlsx")
         excel_file = "test.xlsx"
